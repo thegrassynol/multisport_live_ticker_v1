@@ -51,7 +51,6 @@
     align-items:center;
     justify-content:center;
     background:linear-gradient(135deg,var(--brand-a) 0%,var(--brand-a) 48%,var(--brand-b) 49%,var(--brand-b) 100%);
-    border-right:1px solid rgba(255,255,255,.14);
     z-index:4;
     overflow:hidden;
     transition:background .5s ease, opacity .35s ease, transform .35s ease, filter .35s ease;
@@ -111,9 +110,10 @@
   }
   .brand-next{
     position:absolute;
-    left:-8px;
-    right:-8px;
+    left:0;
+    right:0;
     bottom:0;
+    width:100%;
     height:38px;
     padding:0 8px;
     border-top:3px solid rgba(255,255,255,.9);
@@ -130,6 +130,7 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
+    overflow:hidden;
   }
   .brand-next .next-label{
     display:block;
