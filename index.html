@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Multi-Sport Live Ticker</title>
+<style>
+  :root{
+    --bg:#0a0f15;
+    --panel:#111923;
+    --panel2:#0d141c;
+    --line:#2a3440;
+    --text:#f7f8fa;
+    --muted:#a8b3bf;
+    --accent:#d92332;
+    --live:#ff4e55;
+    --h:128px;
+    --speed:90s;
+  }
+
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:transparent;
+    font-family:Arial, Helvetica, sans-serif;
+  }
+
+  .ticker{
+    height:var(--h);
+    width:100%;
+    display:flex;
+    background:linear-gradient(180deg,#101720 0%,#0a1016 100%);
+    border-top:1px solid #33404e;
+    border-bottom:1px solid #06090d;
+    color:var(--text);
+    overflow:hidden;
+  }
+
+  .brand{
+    width:124px;
+    flex:0 0 124px;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg,#17375c 0%,#17375c 48%,#b21f35 49%,#b21f35 100%);
+    border-right:1px solid rgba(255,255,255,.14);
+    z-index:4;
+  }
+
+  .brand-inner{text-align:center;line-height:1}
+  .brand-title{
+    font-weight:900;
+    font-size:28px;
+    letter-spacing:-1px;
+  }
+  .brand-sub{
+    margin-top:8px;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:1.6px;
+  }
+
+  .viewport{
+    min-width:0;
+    flex:1;
+    overflow:hidden;
+    position:relative;
+  }
+
+  .track{
+    height:100%;
+    display:flex;
+    width:max-content;
+    will-change:transform;
+    animation:scroll var(--speed) linear infinite;
+  }
+  .group{display:flex;height:100%}
+
+  @keyframes scroll{
+    from{transform:translateX(0)}
+    to{transform:translateX(-50%)}
+  }
+
+  .item{
+    height:100%;
+    flex:0 0 auto;
+    border-right:1px solid var(--line);
+    background:linear-gradient(180deg,var(--panel) 0%,var(--panel2) 100%);
+  }
+
+  .score{
+    width:300px;
+    padding:10px 12px 8px;
+    display:grid;
+    grid-template-rows:34px 34px 24px;
+    row-gap:2px;
+  }
+
+  .team-row{
+    display:grid;
+    grid-template-columns:30px 48px 1fr 38px;
+    align-items:center;
+    gap:7px;
+    min-height:34px;
+  }
+
+  .logo{
+    width:28px;
+    height:28px;
+    object-fit:contain;
+  }
+
+  .abbr{
+    font-weight:900;
+    font-size:19px;
+    line-height:1;
+  }
+
+  .record{
+    font-size:12px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+
+  .runs{
+    font-size:23px;
+    font-weight:900;
+    text-align:right;
+    line-height:1;
+  }
+
+  .game-meta{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:10px;
+    border-top:1px solid #222c37;
+    padding-top:4px;
+    font-size:10px;
+    line-height:1;
+    font-weight:800;
+    color:#cad3dd;
+    letter-spacing:.45px;
+    text-transform:uppercase;
+    white-space:nowrap;
+    overflow:hidden;
+  }
+
+  .game-meta span:last-child{
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .live-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--live);
+    box-shadow:0 0 6px rgba(255,78,85,.85);
+    display:inline-block;
+    margin-right:5px;
+    vertical-align:1px;
+  }
+
+  .status-live{color:#ff8589}
+  .status-final{color:#d0d8e1}
+  .status-upcoming{color:#8cb9ff}
+
+  .news{
+    width:540px;
+    padding:12px 18px 11px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+    background:linear-gradient(180deg,#121a23 0%,#0c131b 100%);
+  }
+
+  .news-kicker{
+    flex:0 0 auto;
+    color:#f07e85;
+    font-weight:900;
+    font-size:11px;
+    line-height:16px;
+    letter-spacing:1.5px;
+    margin:0 0 5px 0;
+  }
+
+  .news-head{
+    flex:0 0 auto;
+    font-size:18px;
+    line-height:23px;
+    font-weight:800;
+    margin:0;
+    padding:0 0 3px 0;
+    min-height:49px;
+    max-height:49px;
+    overflow:hidden;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+  }
+
+  .news-source{
+    flex:0 0 auto;
+    margin-top:auto;
+    color:var(--muted);
+    font-size:10px;
+    line-height:14px;
+    font-weight:700;
+    padding-top:2px;
+  }
+
+  .empty,.error{
+    display:flex;
+    align-items:center;
+    padding:0 20px;
+    font-weight:800;
+  }
+  .empty{width:520px;font-size:18px;color:#d5dde6}
+  .error{width:600px;font-size:15px;color:#ffd1d1}
+
+  .leaders{
+    width:360px;
+    padding:8px 14px 8px;
+    display:grid;
+    grid-template-rows:20px 22px 22px 22px 18px;
+    row-gap:1px;
+  }
+  .leader-title{
+    font-size:11px;
+    line-height:20px;
+    font-weight:900;
+    color:#dce4ec;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .leader-row{
+    display:grid;
+    grid-template-columns:22px 26px 1fr 54px;
+    align-items:center;
+    gap:6px;
+    min-height:22px;
+  }
+  .leader-pos{
+    font-size:12px;
+    font-weight:900;
+    color:#9fb0c1;
+  }
+  .leader-logo{
+    width:21px;
+    height:21px;
+  }
+  .leader-name{
+    font-size:14px;
+    line-height:1;
+    font-weight:850;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .leader-score{
+    font-size:13px;
+    font-weight:900;
+    text-align:right;
+  }
+  .leader-status{
+    border-top:1px solid #222c37;
+    padding-top:3px;
+    font-size:10px;
+    line-height:15px;
+    font-weight:900;
+    letter-spacing:.4px;
+    text-transform:uppercase;
+  }
+  .event-card{
+    width:380px;
+    padding:16px 18px 12px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .event-kicker{
+    color:#f07e85;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:1.4px;
+    margin-bottom:6px;
+  }
+  .event-name{
+    font-size:18px;
+    font-weight:850;
+    line-height:22px;
+    max-height:44px;
+    overflow:hidden;
+  }
+  .event-status{
+    margin-top:6px;
+    color:#9fb0c1;
+    font-size:10px;
+    font-weight:900;
+  }
+
+</style>
+</head>
+<body>
+<div class="ticker">
+  <div class="brand">
+    <div class="brand-inner">
+      <div class="brand-title" id="brandTitle">MLB</div>
+      <div class="brand-sub" id="brandSub">LIVE TICKER</div>
+    </div>
+  </div>
+
+  <div class="viewport">
+    <div class="track" id="track">
+      <div class="group" id="groupA"></div>
+      <div class="group" id="groupB"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  MULTI-SPORT LIVE TICKER
+  Cycles through major sports automatically.
+  Change SPORT_SECONDS below if you want each category to stay up longer/shorter.
+*/
+
+const SPORT_SECONDS = 28;
+const SCORE_REFRESH_MS = 30000;
+const NEWS_REFRESH_MS = 180000;
+const MAX_NEWS_ITEMS = 5;
+
+const SPORTS = [
+  { key:'mlb',   label:'MLB',   sport:'baseball',   league:'mlb',                     kind:'team'   },
+  { key:'nfl',   label:'NFL',   sport:'football',   league:'nfl',                     kind:'team'   },
+  { key:'nba',   label:'NBA',   sport:'basketball', league:'nba',                     kind:'team'   },
+  { key:'nhl',   label:'NHL',   sport:'hockey',     league:'nhl',                     kind:'team'   },
+  { key:'ncaaf', label:'NCAAF', sport:'football',   league:'college-football',        kind:'team'   },
+  { key:'ncaam', label:'NCAAM', sport:'basketball', league:'mens-college-basketball', kind:'team'   },
+  { key:'wnba',  label:'WNBA',  sport:'basketball', league:'wnba',                    kind:'team'   },
+  { key:'mls',   label:'MLS',   sport:'soccer',     league:'usa.1',                  kind:'team'   },
+  { key:'pga',   label:'GOLF',  sport:'golf',       league:'pga',                     kind:'leader' },
+  { key:'f1',    label:'F1',    sport:'racing',     league:'f1',                      kind:'leader' }
+];
+
+let sportIndex = 0;
+let currentSport = SPORTS[0];
+let games = [];
+let headlines = [];
+let lastScoreFetch = 0;
+let lastNewsFetch = 0;
+let rotationTimer = null;
+
+const esc = (s='') => String(s)
+  .replaceAll('&','&amp;')
+  .replaceAll('<','&lt;')
+  .replaceAll('>','&gt;')
+  .replaceAll('"','&quot;')
+  .replaceAll("'","&#039;");
+
+function apiBase(s){
+  return `https://site.api.espn.com/apis/site/v2/sports/${s.sport}/${s.league}`;
+}
+
+function setBrand(s){
+  document.getElementById('brandTitle').textContent = s.label;
+  document.getElementById('brandSub').textContent = 'LIVE TICKER';
+}
+
+function formatRecord(team){
+  return team?.records?.[0]?.summary || '';
+}
+
+function eventStatus(comp){
+  const st = comp?.status?.type || {};
+  const detail = st.shortDetail || st.detail || '';
+  const state = st.state || '';
+  if(state === 'in') return {text: detail || 'LIVE', cls:'status-live', live:true};
+  if(state === 'post') return {text: detail || 'FINAL', cls:'status-final', live:false};
+  return {text: detail || 'UPCOMING', cls:'status-upcoming', live:false};
+}
+
+function scoreCard(event){
+  const comp = event?.competitions?.[0];
+  if(!comp) return '';
+
+  const teams = [...(comp.competitors || [])].sort((a,b)=>{
+    const ao = a.homeAway === 'away' ? 0 : 1;
+    const bo = b.homeAway === 'away' ? 0 : 1;
+    return ao - bo;
+  });
+
+  if(teams.length < 2) return '';
+
+  const meta = eventStatus(comp);
+  const venue = comp?.venue?.fullName || event?.season?.slug || '';
+
+  const rows = teams.slice(0,2).map(t=>{
+    const team = t.team || {};
+    const logo = team.logo || team.logos?.[0]?.href || '';
+    const abbr = team.abbreviation || team.shortDisplayName || team.displayName || '';
+    const score = t.score ?? '-';
+    return `
+      <div class="team-row">
+        <img class="logo" src="${esc(logo)}" alt="">
+        <div class="abbr">${esc(abbr)}</div>
+        <div class="record">${esc(formatRecord(t))}</div>
+        <div class="runs">${esc(score)}</div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="item score">
+      ${rows}
+      <div class="game-meta">
+        <span class="${meta.cls}">${meta.live ? '<span class="live-dot"></span>' : ''}${esc(meta.text)}</span>
+        <span>${esc(venue)}</span>
+      </div>
+    </div>`;
+}
+
+function leaderCard(event, sport){
+  const comp = event?.competitions?.[0];
+  const competitors = comp?.competitors || [];
+  const status = eventStatus(comp);
+  const eventName = event?.shortName || event?.name || comp?.shortName || sport.label;
+
+  let rows = competitors.slice(0,3).map((c, idx)=>{
+    const athlete = c.athlete || c.driver || {};
+    const name = athlete.shortName || athlete.displayName || c.displayName || c.team?.displayName || `#${idx+1}`;
+    const logo = athlete.flag?.href || c.team?.logo || c.team?.logos?.[0]?.href || '';
+    const pos = c.order || c.place || c.position || (idx+1);
+    const score = c.score ?? c.stats?.find(x=>x.name==='score')?.displayValue ?? '';
+    return `
+      <div class="leader-row">
+        <div class="leader-pos">${esc(pos)}</div>
+        ${logo ? `<img class="logo leader-logo" src="${esc(logo)}" alt="">` : `<div></div>`}
+        <div class="leader-name">${esc(name)}</div>
+        <div class="leader-score">${esc(score)}</div>
+      </div>`;
+  }).join('');
+
+  if(!rows){
+    return `
+      <div class="item event-card">
+        <div class="event-kicker">${esc(sport.label)}</div>
+        <div class="event-name">${esc(eventName)}</div>
+        <div class="event-status">${esc(status.text)}</div>
+      </div>`;
+  }
+
+  return `
+    <div class="item leaders">
+      <div class="leader-title">${esc(eventName)}</div>
+      ${rows}
+      <div class="leader-status ${status.cls}">${status.live ? '<span class="live-dot"></span>' : ''}${esc(status.text)}</div>
+    </div>`;
+}
+
+function newsCard(article, label){
+  const head = article?.headline || article?.title || '';
+  if(!head) return '';
+  const source = article?.source || 'ESPN';
+  return `
+    <div class="item news">
+      <div class="news-kicker">${esc(label)} NEWS</div>
+      <div class="news-head">${esc(head)}</div>
+      <div class="news-source">${esc(source)}</div>
+    </div>`;
+}
+
+function composeItems(){
+  const items = [];
+
+  if(games.length){
+    games.forEach((g, i)=>{
+      items.push(currentSport.kind === 'leader' ? leaderCard(g, currentSport) : scoreCard(g));
+      if((i+1) % 3 === 0 && headlines.length){
+        const h = headlines[Math.floor(i/3) % headlines.length];
+        items.push(newsCard(h, currentSport.label));
+      }
+    });
+  }
+
+  if(!games.length && headlines.length){
+    headlines.slice(0,3).forEach(h=>items.push(newsCard(h, currentSport.label)));
+  }
+
+  if(!games.length && !headlines.length){
+    items.push(`<div class="item empty">No current ${esc(currentSport.label)} events or headlines available.</div>`);
+  } else if(headlines.length){
+    const alreadyInserted = Math.floor(games.length / 3);
+    headlines.slice(alreadyInserted, alreadyInserted + 2)
+      .forEach(h=>items.push(newsCard(h, currentSport.label)));
+  }
+
+  return items.filter(Boolean).join('');
+}
+
+function render(){
+  const a = document.getElementById('groupA');
+  const b = document.getElementById('groupB');
+  const html = composeItems();
+  a.innerHTML = html;
+  b.innerHTML = html;
+
+  requestAnimationFrame(()=>{
+    const width = a.scrollWidth;
+    const pxPerSecond = 72;
+    const seconds = Math.max(35, width / pxPerSecond);
+    document.documentElement.style.setProperty('--speed', `${seconds}s`);
+
+    // Restart animation cleanly whenever the sport changes.
+    const track = document.getElementById('track');
+    track.style.animation = 'none';
+    void track.offsetWidth;
+    track.style.animation = `scroll ${seconds}s linear infinite`;
+  });
+}
+
+async function loadScores(){
+  const token = currentSport.key;
+  try{
+    const r = await fetch(`${apiBase(currentSport)}/scoreboard?_=${Date.now()}`, {cache:'no-store'});
+    if(!r.ok) throw new Error(`Scoreboard HTTP ${r.status}`);
+    const data = await r.json();
+    if(token !== currentSport.key) return;
+    games = data?.events || [];
+    lastScoreFetch = Date.now();
+    render();
+  }catch(err){
+    console.error(err);
+    if(token === currentSport.key){
+      games = [];
+      render();
+    }
+  }
+}
+
+async function loadNews(){
+  const token = currentSport.key;
+  try{
+    const r = await fetch(`${apiBase(currentSport)}/news?limit=8&_=${Date.now()}`, {cache:'no-store'});
+    if(!r.ok) throw new Error(`News HTTP ${r.status}`);
+    const data = await r.json();
+    if(token !== currentSport.key) return;
+    headlines = (data?.articles || []).slice(0, MAX_NEWS_ITEMS);
+    lastNewsFetch = Date.now();
+    render();
+  }catch(err){
+    console.error(err);
+    if(token === currentSport.key){
+      headlines = [];
+      render();
+    }
+  }
+}
+
+function loadCurrentSport(){
+  currentSport = SPORTS[sportIndex];
+  games = [];
+  headlines = [];
+  lastScoreFetch = 0;
+  lastNewsFetch = 0;
+  setBrand(currentSport);
+  render();
+  loadScores();
+  loadNews();
+}
+
+function nextSport(){
+  sportIndex = (sportIndex + 1) % SPORTS.length;
+  loadCurrentSport();
+}
+
+function refreshLoop(){
+  const now = Date.now();
+  if(now - lastScoreFetch > SCORE_REFRESH_MS) loadScores();
+  if(now - lastNewsFetch > NEWS_REFRESH_MS) loadNews();
+}
+
+loadCurrentSport();
+setInterval(refreshLoop, 5000);
+rotationTimer = setInterval(nextSport, SPORT_SECONDS * 1000);
+</script>
+</body>
+</html>
