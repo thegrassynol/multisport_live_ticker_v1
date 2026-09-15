@@ -58,33 +58,81 @@
   }
 
   .brand-mark{
-    position:absolute;
-    inset:auto -8px 2px auto;
-    font-size:60px;
-    line-height:1;
-    font-weight:900;
-    letter-spacing:-3px;
-    color:rgba(255,255,255,.08);
-    pointer-events:none;
-    user-select:none;
+    display:none;
   }
 
   .brand-inner{
+    width:100%;
+    height:100%;
+    padding:8px 8px 48px;
     text-align:center;
     line-height:1;
     z-index:1;
     position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    gap:6px;
+  }
+  .brand-logo{
+    width:52px;
+    height:52px;
+    object-fit:contain;
+    margin:0 0 2px;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.35));
+  }
+  .brand-logo.hidden{
+    display:none;
   }
   .brand-title{
     font-weight:900;
-    font-size:28px;
+    font-size:20px;
     letter-spacing:-1px;
+    margin:0;
   }
   .brand-sub{
-    margin-top:8px;
-    font-size:10px;
+    margin:1px 0 0;
+    padding-bottom:4px;
+    font-size:8px;
     font-weight:800;
     letter-spacing:1.6px;
+  }
+  .brand-next{
+    position:absolute;
+    left:-8px;
+    right:-8px;
+    bottom:0;
+    height:38px;
+    padding:0 8px;
+    border-top:3px solid rgba(255,255,255,.9);
+    background:linear-gradient(180deg,#0a0f16 0%, #111923 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    font-size:8px;
+    line-height:1.05;
+    font-weight:900;
+    letter-spacing:.7px;
+    color:#eaf2fb;
+    opacity:1;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .brand-next .next-label{
+    display:block;
+    font-size:7px;
+    letter-spacing:1.2px;
+    color:#ffb2b4;
+    margin:0 0 2px 0;
+  }
+  .brand-next .next-sport{
+    display:block;
+    font-size:11px;
+    line-height:1;
+    letter-spacing:.6px;
+    color:#ffffff;
   }
 
   .viewport{
@@ -95,23 +143,6 @@
     transition:opacity .35s ease, transform .35s ease, filter .35s ease;
   }
 
-  .next-badge{
-    position:absolute;
-    top:7px;
-    right:10px;
-    z-index:8;
-    padding:5px 10px;
-    border-radius:999px;
-    background:linear-gradient(135deg,rgba(12,20,29,.92) 0%, rgba(25,37,49,.92) 45%, color-mix(in srgb, var(--badge-b) 78%, black) 100%);
-    border:1px solid rgba(255,255,255,.12);
-    box-shadow:0 6px 18px rgba(0,0,0,.25);
-    font-size:10px;
-    font-weight:900;
-    letter-spacing:1px;
-    white-space:nowrap;
-    color:#fff;
-    transition:opacity .35s ease, transform .35s ease, background .5s ease;
-  }
 
   .track{
     height:100%;
@@ -365,13 +396,14 @@
   <div class="brand" id="brand">
     <div class="brand-mark" id="brandMark">MLB</div>
     <div class="brand-inner">
+      <img class="brand-logo" id="brandLogo" alt="">
       <div class="brand-title" id="brandTitle">MLB</div>
       <div class="brand-sub" id="brandSub">LIVE TICKER</div>
+      <div class="brand-next" id="brandNext">UP NEXT: NFL</div>
     </div>
   </div>
 
   <div class="viewport" id="viewport">
-    <div class="next-badge" id="nextBadge">UP NEXT: NFL</div>
     <div class="track" id="track">
       <div class="group" id="groupA"></div>
       <div class="group" id="groupB"></div>
@@ -387,16 +419,16 @@ const NEWS_REFRESH_MS = 180000;
 const MAX_NEWS_ITEMS = 5;
 
 const SPORTS = [
-  { key:'mlb',   label:'MLB',   sport:'baseball',   league:'mlb',                     kind:'team',   colorA:'#17375c', colorB:'#b21f35', mark:'MLB'   },
-  { key:'nfl',   label:'NFL',   sport:'football',   league:'nfl',                     kind:'team',   colorA:'#1c4f7f', colorB:'#d74d43', mark:'NFL'   },
-  { key:'nba',   label:'NBA',   sport:'basketball', league:'nba',                     kind:'team',   colorA:'#17408b', colorB:'#c9082a', mark:'NBA'   },
-  { key:'nhl',   label:'NHL',   sport:'hockey',     league:'nhl',                     kind:'team',   colorA:'#2b2b2b', colorB:'#8d99a6', mark:'NHL'   },
-  { key:'ncaaf', label:'NCAAF', sport:'football',   league:'college-football',        kind:'team',   colorA:'#0d4d8b', colorB:'#1e8f64', mark:'CFB'   },
-  { key:'ncaam', label:'NCAAM', sport:'basketball', league:'mens-college-basketball', kind:'team',   colorA:'#214cce', colorB:'#f37021', mark:'CBB'   },
-  { key:'wnba',  label:'WNBA',  sport:'basketball', league:'wnba',                    kind:'team',   colorA:'#4e2f7f', colorB:'#f07d00', mark:'WNBA'  },
-  { key:'mls',   label:'MLS',   sport:'soccer',     league:'usa.1',                   kind:'team',   colorA:'#111111', colorB:'#6d7f95', mark:'MLS'   },
-  { key:'pga',   label:'GOLF',  sport:'golf',       league:'pga',                     kind:'leader', colorA:'#1d5f31', colorB:'#c6a44b', mark:'PGA'   },
-  { key:'f1',    label:'F1',    sport:'racing',     league:'f1',                      kind:'leader', colorA:'#111111', colorB:'#e10600', mark:'F1'    }
+  { key:'mlb',   label:'MLB',   sport:'baseball',   league:'mlb',                     kind:'team',   colorA:'#17375c', colorB:'#b21f35', mark:'MLB',  logo:'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' },
+  { key:'nfl',   label:'NFL',   sport:'football',   league:'nfl',                     kind:'team',   colorA:'#1c4f7f', colorB:'#d74d43', mark:'NFL',  logo:'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png' },
+  { key:'nba',   label:'NBA',   sport:'basketball', league:'nba',                     kind:'team',   colorA:'#17408b', colorB:'#c9082a', mark:'NBA',  logo:'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png' },
+  { key:'nhl',   label:'NHL',   sport:'hockey',     league:'nhl',                     kind:'team',   colorA:'#2b2b2b', colorB:'#8d99a6', mark:'NHL',  logo:'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png' },
+  { key:'ncaaf', label:'NCAAF', sport:'football',   league:'college-football',        kind:'team',   colorA:'#0d4d8b', colorB:'#1e8f64', mark:'CFB',  logo:'' },
+  { key:'ncaam', label:'NCAAM', sport:'basketball', league:'mens-college-basketball', kind:'team',   colorA:'#214cce', colorB:'#f37021', mark:'CBB',  logo:'' },
+  { key:'wnba',  label:'WNBA',  sport:'basketball', league:'wnba',                    kind:'team',   colorA:'#4e2f7f', colorB:'#f07d00', mark:'WNBA', logo:'https://a.espncdn.com/i/teamlogos/leagues/500/wnba.png' },
+  { key:'mls',   label:'MLS',   sport:'soccer',     league:'usa.1',                   kind:'team',   colorA:'#111111', colorB:'#6d7f95', mark:'MLS',  logo:'' },
+  { key:'pga',   label:'GOLF',  sport:'golf',       league:'pga',                     kind:'leader', colorA:'#1d5f31', colorB:'#c6a44b', mark:'PGA',  logo:'' },
+  { key:'f1',    label:'F1',    sport:'racing',     league:'f1',                      kind:'leader', colorA:'#111111', colorB:'#e10600', mark:'F1',   logo:'' }
 ];
 
 let sportIndex = 0;
@@ -408,7 +440,8 @@ const tickerEl = document.querySelector('.ticker');
 const brandTitleEl = document.getElementById('brandTitle');
 const brandSubEl = document.getElementById('brandSub');
 const brandMarkEl = document.getElementById('brandMark');
-const nextBadgeEl = document.getElementById('nextBadge');
+const brandLogoEl = document.getElementById('brandLogo');
+const brandNextEl = document.getElementById('brandNext');
 
 const esc = (s='') => String(s)
   .replaceAll('&','&amp;')
@@ -440,11 +473,27 @@ function setTheme(s){
   brandTitleEl.textContent = s.label;
   brandSubEl.textContent = 'LIVE TICKER';
   brandMarkEl.textContent = s.mark || s.label;
+
+  // Only show league logos we explicitly trust. If one ever fails, hide it cleanly.
+  brandLogoEl.onerror = () => {
+    brandLogoEl.classList.add('hidden');
+    brandLogoEl.removeAttribute('src');
+  };
+
+  if(s.logo){
+    brandLogoEl.classList.remove('hidden');
+    brandLogoEl.alt = `${s.label} logo`;
+    brandLogoEl.src = s.logo;
+  } else {
+    brandLogoEl.classList.add('hidden');
+    brandLogoEl.removeAttribute('src');
+    brandLogoEl.alt = '';
+  }
 }
 
 function updateNextBadge(){
   const nextSport = getNextSport();
-  nextBadgeEl.textContent = `UP NEXT: ${nextSport.label}`;
+  brandNextEl.innerHTML = `<span class="next-label">UP NEXT</span><span class="next-sport">${esc(nextSport.label)}</span>`;
 }
 
 function formatRecord(team){
