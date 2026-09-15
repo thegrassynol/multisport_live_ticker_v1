@@ -16,6 +16,10 @@
     --live:#ff4e55;
     --h:128px;
     --speed:90s;
+    --brand-a:#17375c;
+    --brand-b:#b21f35;
+    --badge-a:#17375c;
+    --badge-b:#b21f35;
   }
 
   *{box-sizing:border-box}
@@ -46,12 +50,31 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    background:linear-gradient(135deg,#17375c 0%,#17375c 48%,#b21f35 49%,#b21f35 100%);
+    background:linear-gradient(135deg,var(--brand-a) 0%,var(--brand-a) 48%,var(--brand-b) 49%,var(--brand-b) 100%);
     border-right:1px solid rgba(255,255,255,.14);
     z-index:4;
+    overflow:hidden;
+    transition:background .5s ease, opacity .35s ease, transform .35s ease, filter .35s ease;
   }
 
-  .brand-inner{text-align:center;line-height:1}
+  .brand-mark{
+    position:absolute;
+    inset:auto -8px 2px auto;
+    font-size:60px;
+    line-height:1;
+    font-weight:900;
+    letter-spacing:-3px;
+    color:rgba(255,255,255,.08);
+    pointer-events:none;
+    user-select:none;
+  }
+
+  .brand-inner{
+    text-align:center;
+    line-height:1;
+    z-index:1;
+    position:relative;
+  }
   .brand-title{
     font-weight:900;
     font-size:28px;
@@ -69,6 +92,25 @@
     flex:1;
     overflow:hidden;
     position:relative;
+    transition:opacity .35s ease, transform .35s ease, filter .35s ease;
+  }
+
+  .next-badge{
+    position:absolute;
+    top:7px;
+    right:10px;
+    z-index:8;
+    padding:5px 10px;
+    border-radius:999px;
+    background:linear-gradient(135deg,rgba(12,20,29,.92) 0%, rgba(25,37,49,.92) 45%, color-mix(in srgb, var(--badge-b) 78%, black) 100%);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 6px 18px rgba(0,0,0,.25);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:1px;
+    white-space:nowrap;
+    color:#fff;
+    transition:opacity .35s ease, transform .35s ease, background .5s ease;
   }
 
   .track{
@@ -83,6 +125,20 @@
   @keyframes scroll{
     from{transform:translateX(0)}
     to{transform:translateX(-50%)}
+  }
+
+  .switching-out .brand,
+  .switching-out .viewport{
+    opacity:.1;
+    transform:translateY(6px);
+    filter:blur(2px);
+  }
+
+  .switching-in .brand,
+  .switching-in .viewport{
+    opacity:1;
+    transform:translateY(0);
+    filter:blur(0);
   }
 
   .item{
@@ -212,15 +268,6 @@
     padding-top:2px;
   }
 
-  .empty,.error{
-    display:flex;
-    align-items:center;
-    padding:0 20px;
-    font-weight:800;
-  }
-  .empty{width:520px;font-size:18px;color:#d5dde6}
-  .error{width:600px;font-size:15px;color:#ffd1d1}
-
   .leaders{
     width:360px;
     padding:8px 14px 8px;
@@ -303,18 +350,28 @@
     font-weight:900;
   }
 
+  .empty,.error{
+    display:flex;
+    align-items:center;
+    padding:0 20px;
+    font-weight:800;
+  }
+  .empty{width:520px;font-size:18px;color:#d5dde6}
+  .error{width:600px;font-size:15px;color:#ffd1d1}
 </style>
 </head>
 <body>
 <div class="ticker">
-  <div class="brand">
+  <div class="brand" id="brand">
+    <div class="brand-mark" id="brandMark">MLB</div>
     <div class="brand-inner">
       <div class="brand-title" id="brandTitle">MLB</div>
       <div class="brand-sub" id="brandSub">LIVE TICKER</div>
     </div>
   </div>
 
-  <div class="viewport">
+  <div class="viewport" id="viewport">
+    <div class="next-badge" id="nextBadge">UP NEXT: NFL</div>
     <div class="track" id="track">
       <div class="group" id="groupA"></div>
       <div class="group" id="groupB"></div>
@@ -323,37 +380,35 @@
 </div>
 
 <script>
-/*
-  MULTI-SPORT LIVE TICKER
-  Cycles through major sports automatically.
-  Change SPORT_SECONDS below if you want each category to stay up longer/shorter.
-*/
-
-const SPORT_SECONDS = 28;
+const SPORT_SECONDS = 24;
+const SWITCH_ANIM_MS = 420;
 const SCORE_REFRESH_MS = 30000;
 const NEWS_REFRESH_MS = 180000;
 const MAX_NEWS_ITEMS = 5;
 
 const SPORTS = [
-  { key:'mlb',   label:'MLB',   sport:'baseball',   league:'mlb',                     kind:'team'   },
-  { key:'nfl',   label:'NFL',   sport:'football',   league:'nfl',                     kind:'team'   },
-  { key:'nba',   label:'NBA',   sport:'basketball', league:'nba',                     kind:'team'   },
-  { key:'nhl',   label:'NHL',   sport:'hockey',     league:'nhl',                     kind:'team'   },
-  { key:'ncaaf', label:'NCAAF', sport:'football',   league:'college-football',        kind:'team'   },
-  { key:'ncaam', label:'NCAAM', sport:'basketball', league:'mens-college-basketball', kind:'team'   },
-  { key:'wnba',  label:'WNBA',  sport:'basketball', league:'wnba',                    kind:'team'   },
-  { key:'mls',   label:'MLS',   sport:'soccer',     league:'usa.1',                  kind:'team'   },
-  { key:'pga',   label:'GOLF',  sport:'golf',       league:'pga',                     kind:'leader' },
-  { key:'f1',    label:'F1',    sport:'racing',     league:'f1',                      kind:'leader' }
+  { key:'mlb',   label:'MLB',   sport:'baseball',   league:'mlb',                     kind:'team',   colorA:'#17375c', colorB:'#b21f35', mark:'MLB'   },
+  { key:'nfl',   label:'NFL',   sport:'football',   league:'nfl',                     kind:'team',   colorA:'#1c4f7f', colorB:'#d74d43', mark:'NFL'   },
+  { key:'nba',   label:'NBA',   sport:'basketball', league:'nba',                     kind:'team',   colorA:'#17408b', colorB:'#c9082a', mark:'NBA'   },
+  { key:'nhl',   label:'NHL',   sport:'hockey',     league:'nhl',                     kind:'team',   colorA:'#2b2b2b', colorB:'#8d99a6', mark:'NHL'   },
+  { key:'ncaaf', label:'NCAAF', sport:'football',   league:'college-football',        kind:'team',   colorA:'#0d4d8b', colorB:'#1e8f64', mark:'CFB'   },
+  { key:'ncaam', label:'NCAAM', sport:'basketball', league:'mens-college-basketball', kind:'team',   colorA:'#214cce', colorB:'#f37021', mark:'CBB'   },
+  { key:'wnba',  label:'WNBA',  sport:'basketball', league:'wnba',                    kind:'team',   colorA:'#4e2f7f', colorB:'#f07d00', mark:'WNBA'  },
+  { key:'mls',   label:'MLS',   sport:'soccer',     league:'usa.1',                   kind:'team',   colorA:'#111111', colorB:'#6d7f95', mark:'MLS'   },
+  { key:'pga',   label:'GOLF',  sport:'golf',       league:'pga',                     kind:'leader', colorA:'#1d5f31', colorB:'#c6a44b', mark:'PGA'   },
+  { key:'f1',    label:'F1',    sport:'racing',     league:'f1',                      kind:'leader', colorA:'#111111', colorB:'#e10600', mark:'F1'    }
 ];
 
 let sportIndex = 0;
 let currentSport = SPORTS[0];
-let games = [];
-let headlines = [];
-let lastScoreFetch = 0;
-let lastNewsFetch = 0;
-let rotationTimer = null;
+let sportData = {};
+let switching = false;
+
+const tickerEl = document.querySelector('.ticker');
+const brandTitleEl = document.getElementById('brandTitle');
+const brandSubEl = document.getElementById('brandSub');
+const brandMarkEl = document.getElementById('brandMark');
+const nextBadgeEl = document.getElementById('nextBadge');
 
 const esc = (s='') => String(s)
   .replaceAll('&','&amp;')
@@ -362,13 +417,34 @@ const esc = (s='') => String(s)
   .replaceAll('"','&quot;')
   .replaceAll("'","&#039;");
 
+function ensureStore(key){
+  if(!sportData[key]){
+    sportData[key] = { games:[], headlines:[], lastScore:0, lastNews:0 };
+  }
+  return sportData[key];
+}
+
 function apiBase(s){
   return `https://site.api.espn.com/apis/site/v2/sports/${s.sport}/${s.league}`;
 }
 
-function setBrand(s){
-  document.getElementById('brandTitle').textContent = s.label;
-  document.getElementById('brandSub').textContent = 'LIVE TICKER';
+function getNextSport(){
+  return SPORTS[(sportIndex + 1) % SPORTS.length];
+}
+
+function setTheme(s){
+  document.documentElement.style.setProperty('--brand-a', s.colorA);
+  document.documentElement.style.setProperty('--brand-b', s.colorB);
+  document.documentElement.style.setProperty('--badge-a', s.colorA);
+  document.documentElement.style.setProperty('--badge-b', s.colorB);
+  brandTitleEl.textContent = s.label;
+  brandSubEl.textContent = 'LIVE TICKER';
+  brandMarkEl.textContent = s.mark || s.label;
+}
+
+function updateNextBadge(){
+  const nextSport = getNextSport();
+  nextBadgeEl.textContent = `UP NEXT: ${nextSport.label}`;
 }
 
 function formatRecord(team){
@@ -473,38 +549,41 @@ function newsCard(article, label){
     </div>`;
 }
 
-function composeItems(){
+function composeItems(sport){
+  const store = ensureStore(sport.key);
+  const games = store.games || [];
+  const headlines = store.headlines || [];
   const items = [];
 
   if(games.length){
     games.forEach((g, i)=>{
-      items.push(currentSport.kind === 'leader' ? leaderCard(g, currentSport) : scoreCard(g));
+      items.push(sport.kind === 'leader' ? leaderCard(g, sport) : scoreCard(g));
       if((i+1) % 3 === 0 && headlines.length){
         const h = headlines[Math.floor(i/3) % headlines.length];
-        items.push(newsCard(h, currentSport.label));
+        items.push(newsCard(h, sport.label));
       }
     });
   }
 
   if(!games.length && headlines.length){
-    headlines.slice(0,3).forEach(h=>items.push(newsCard(h, currentSport.label)));
+    headlines.slice(0,3).forEach(h=>items.push(newsCard(h, sport.label)));
   }
 
   if(!games.length && !headlines.length){
-    items.push(`<div class="item empty">No current ${esc(currentSport.label)} events or headlines available.</div>`);
+    items.push(`<div class="item empty">No current ${esc(sport.label)} events or headlines available.</div>`);
   } else if(headlines.length){
     const alreadyInserted = Math.floor(games.length / 3);
     headlines.slice(alreadyInserted, alreadyInserted + 2)
-      .forEach(h=>items.push(newsCard(h, currentSport.label)));
+      .forEach(h=>items.push(newsCard(h, sport.label)));
   }
 
   return items.filter(Boolean).join('');
 }
 
-function render(){
+function renderForSport(sport){
   const a = document.getElementById('groupA');
   const b = document.getElementById('groupB');
-  const html = composeItems();
+  const html = composeItems(sport);
   a.innerHTML = html;
   b.innerHTML = html;
 
@@ -514,7 +593,6 @@ function render(){
     const seconds = Math.max(35, width / pxPerSecond);
     document.documentElement.style.setProperty('--speed', `${seconds}s`);
 
-    // Restart animation cleanly whenever the sport changes.
     const track = document.getElementById('track');
     track.style.animation = 'none';
     void track.offsetWidth;
@@ -522,70 +600,90 @@ function render(){
   });
 }
 
-async function loadScores(){
-  const token = currentSport.key;
+async function loadScoresFor(sport){
+  const store = ensureStore(sport.key);
   try{
-    const r = await fetch(`${apiBase(currentSport)}/scoreboard?_=${Date.now()}`, {cache:'no-store'});
+    const r = await fetch(`${apiBase(sport)}/scoreboard?_=${Date.now()}`, {cache:'no-store'});
     if(!r.ok) throw new Error(`Scoreboard HTTP ${r.status}`);
     const data = await r.json();
-    if(token !== currentSport.key) return;
-    games = data?.events || [];
-    lastScoreFetch = Date.now();
-    render();
+    store.games = data?.events || [];
+    store.lastScore = Date.now();
+    if(sport.key === currentSport.key) renderForSport(currentSport);
   }catch(err){
     console.error(err);
-    if(token === currentSport.key){
-      games = [];
-      render();
-    }
+    store.games = store.games || [];
+    if(sport.key === currentSport.key) renderForSport(currentSport);
   }
 }
 
-async function loadNews(){
-  const token = currentSport.key;
+async function loadNewsFor(sport){
+  const store = ensureStore(sport.key);
   try{
-    const r = await fetch(`${apiBase(currentSport)}/news?limit=8&_=${Date.now()}`, {cache:'no-store'});
+    const r = await fetch(`${apiBase(sport)}/news?limit=8&_=${Date.now()}`, {cache:'no-store'});
     if(!r.ok) throw new Error(`News HTTP ${r.status}`);
     const data = await r.json();
-    if(token !== currentSport.key) return;
-    headlines = (data?.articles || []).slice(0, MAX_NEWS_ITEMS);
-    lastNewsFetch = Date.now();
-    render();
+    store.headlines = (data?.articles || []).slice(0, MAX_NEWS_ITEMS);
+    store.lastNews = Date.now();
+    if(sport.key === currentSport.key) renderForSport(currentSport);
   }catch(err){
     console.error(err);
-    if(token === currentSport.key){
-      headlines = [];
-      render();
-    }
+    store.headlines = store.headlines || [];
+    if(sport.key === currentSport.key) renderForSport(currentSport);
   }
 }
 
-function loadCurrentSport(){
-  currentSport = SPORTS[sportIndex];
-  games = [];
-  headlines = [];
-  lastScoreFetch = 0;
-  lastNewsFetch = 0;
-  setBrand(currentSport);
-  render();
-  loadScores();
-  loadNews();
+function prefetchSport(sport){
+  const store = ensureStore(sport.key);
+  const now = Date.now();
+  if(now - store.lastScore > SCORE_REFRESH_MS) loadScoresFor(sport);
+  if(now - store.lastNews > NEWS_REFRESH_MS) loadNewsFor(sport);
 }
 
-function nextSport(){
+async function switchToNextSport(){
+  if(switching) return;
+  switching = true;
+
+  const nextSport = getNextSport();
+  prefetchSport(nextSport);
+
+  tickerEl.classList.remove('switching-in');
+  tickerEl.classList.add('switching-out');
+
+  await new Promise(r => setTimeout(r, SWITCH_ANIM_MS));
+
   sportIndex = (sportIndex + 1) % SPORTS.length;
-  loadCurrentSport();
+  currentSport = SPORTS[sportIndex];
+  setTheme(currentSport);
+  updateNextBadge();
+  renderForSport(currentSport);
+  prefetchSport(currentSport);
+
+  tickerEl.classList.remove('switching-out');
+  tickerEl.classList.add('switching-in');
+
+  setTimeout(()=>{
+    tickerEl.classList.remove('switching-in');
+    switching = false;
+  }, SWITCH_ANIM_MS + 80);
 }
 
 function refreshLoop(){
-  const now = Date.now();
-  if(now - lastScoreFetch > SCORE_REFRESH_MS) loadScores();
-  if(now - lastNewsFetch > NEWS_REFRESH_MS) loadNews();
+  prefetchSport(currentSport);
+  prefetchSport(getNextSport());
 }
 
-loadCurrentSport();
-setInterval(refreshLoop, 5000);
-rotationTimer = setInterval(nextSport, SPORT_SECONDS * 1000);
+function init(){
+  ensureStore(currentSport.key);
+  setTheme(currentSport);
+  updateNextBadge();
+  renderForSport(currentSport);
+  prefetchSport(currentSport);
+  prefetchSport(getNextSport());
+  setInterval(refreshLoop, 5000);
+  setInterval(switchToNextSport, SPORT_SECONDS * 1000);
+}
+
+init();
 </script>
 </body>
 </html>
